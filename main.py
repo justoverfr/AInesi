@@ -54,14 +54,16 @@ def rate_sentiment(text, sentiment):
         classifier = pipeline("zero-shot-classification")
 
         depression_analysis = classifier(text, candidate_labels=[
-            "depression", "suicide"])
+            "depression", "dislike"])
 
         print(depression_analysis)
 
-        depression_level = sum(depression_analysis["scores"])
+        depression_id = depression_analysis["labels"].index("depression")
+        depression_level = depression_analysis["scores"][depression_id]
+
         print(f"Le niveau de dépression est de {depression_level}")
 
-        if depression_level > 0.5:
+        if depression_level >= 1:
             print("Ce message semble être dépressif")
 
         else:
