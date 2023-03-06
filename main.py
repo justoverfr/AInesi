@@ -1,5 +1,8 @@
+from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import langcodes
+
 import torch
-from transformers import *
 
 # This is a sample Python script.
 
