@@ -1,1 +1,1 @@
-# psy-AI
+# AInesi
