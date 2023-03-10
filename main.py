@@ -69,6 +69,9 @@ def get_language_iso(language_name):
 
 
 def translate_to_english(text, language_iso):
+
+
+def translate_to_english(text, language_iso):
     if language_iso == "en":
         return text
     else:
@@ -227,5 +230,8 @@ if __name__ == '__main__':
 
         ai_response = get_response(en_message, language_iso, step)
         print(f"AInesi : {ai_response}")
+        ai_response = get_response(en_message, language_iso, step)
+        print(f"AInesi : {ai_response}")
 
+        step += 1
         step += 1
