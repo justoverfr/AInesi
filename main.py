@@ -65,10 +65,9 @@ def get_language(text):
 
 def get_language_iso(language_name):
     language_code = langcodes.find(language_name).language
+    if language_code == "br":
+        language_code = "fr"
     return language_code
-
-
-def translate_to_english(text, language_iso):
 
 
 def translate_to_english(text, language_iso):
@@ -205,6 +204,7 @@ def get_response(text, ai_language, step):
 user_happiness = 1
 user_personality = {'Extroversion': 0.5, 'Neuroticism': 0.5,
                     'Agreeableness': 0.5, 'Conscientiousness': 0.5, 'Openness': 0.5}
+
 if __name__ == '__main__':
 
     step = 0
@@ -230,8 +230,5 @@ if __name__ == '__main__':
 
         ai_response = get_response(en_message, language_iso, step)
         print(f"AInesi : {ai_response}")
-        ai_response = get_response(en_message, language_iso, step)
-        print(f"AInesi : {ai_response}")
 
-        step += 1
         step += 1
