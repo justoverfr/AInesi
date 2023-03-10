@@ -2,6 +2,7 @@ from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM, BertForSequenceClassification, BertTokenizer
 from typing import Dict
 import langcodes
+import gradio as gr
 
 import torch
 
@@ -15,6 +16,10 @@ import torch
 # Détection de la langue
 language_detection_model = "ivanlau/language-detection-fine-tuned-on-xlm-roberta-base"
 
+tokenizer3 = AutoTokenizer.from_pretrained(language_detection_model)
+model3 = AutoModelForSequenceClassification.from_pretrained(
+    language_detection_model)
+
 # Conversation
 conversation_model = "microsoft/DialoGPT-medium"
 tokenizer = AutoTokenizer.from_pretrained(conversation_model)
@@ -22,6 +27,9 @@ model = AutoModelForCausalLM.from_pretrained(conversation_model)
 
 # Emotions
 emotions_model = "j-hartmann/emotion-english-distilroberta-base"
+
+emotions_analysis = pipeline(
+    "text-classification", model=emotions_model, return_all_scores=True)
 
 # Personnalité
 personality_model = "./Personality_detection_Classification_Save/"
@@ -50,22 +58,18 @@ model2.config.id2label = {
 
 
 def get_language(text):
-    tokenizer = AutoTokenizer.from_pretrained(language_detection_model)
-    model = AutoModelForSequenceClassification.from_pretrained(
-        language_detection_model)
-
-    inputs = tokenizer(text, return_tensors="pt")
-    outputs = model(**inputs)
+    inputs = tokenizer3(text, return_tensors="pt")
+    outputs = model3(**inputs)
 
     label_id = torch.argmax(outputs.logits, axis=1).item()
-    labels = model.config.id2label
+    labels = model3.config.id2label
     language_code = labels[label_id]
     return language_code
 
 
 def get_language_iso(language_name):
     language_code = langcodes.find(language_name).language
-    if language_code == "br":
+    if language_code == "br" or language_code == "ia":
         language_code = "fr"
     return language_code
 
@@ -90,8 +94,6 @@ def translate_to_language(text, target_language_iso):
 
 
 def get_emotions(text):
-    emotions_analysis = pipeline(
-        "text-classification", model=emotions_model, return_all_scores=True)
     emotions_array = emotions_analysis(text)[0]
 
     # Cacul du score de bonne humeur
@@ -201,34 +203,86 @@ def get_response(text, ai_language, step):
     return translate_to_language(ai_message, ai_language)
 
 
+def send_message(user_message):
+    global step
+
+    language = get_language(user_message)
+    language_iso = get_language_iso(language)
+
+    en_message = translate_to_english(user_message, language_iso)
+
+    # print(f"Texte traduit en anglais : {en_message}")
+
+    get_emotions(en_message)
+    # print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+
+    Personality_Detection_from_reviews_submitted(en_message)
+    # print(f"Personnalité : {user_personality}")
+
+    return get_response(en_message, language_iso, step)
+    # print(f"AInesi : {ai_response}")
+
+    step += 1
+
+
 user_happiness = 1
 user_personality = {'Extroversion': 0.5, 'Neuroticism': 0.5,
                     'Agreeableness': 0.5, 'Conscientiousness': 0.5, 'Openness': 0.5}
 
+model_input = gr.Textbox(
+    "Bonjour !", show_label=False)
+model_output = gr.Label("AInesi", num_top_classes=6, show_label=True,
+                        label="Réponse de AInesi")
+examples = [
+    ("J'ai mal au coeur")
+]
+
+title = "<center><h1>AInesi</h1></center>"
+description = (
+    "<br><br>AInesi est une Intelligence Artificielle de soutien émotionnelle et psychologique")
+footer = (
+    "<center>Copyright &copy; 2023 - All Rights Reserved</center>"
+)
+
+css_path = "./style.css"
+
+app = gr.Interface(
+    fn=send_message,
+    inputs=model_input,
+    outputs=model_output,
+    examples=examples,
+    title=title,
+    description=description,
+    css=css_path
+)
+
+
 if __name__ == '__main__':
 
     step = 0
-    print("===== AInesi =====")
-    while True:
-        user_message = input("Vous : ")
+    app.launch(debug=True, show_error=False)
 
-        if user_message == "quit":
-            break
+    # print("===== AInesi =====")
+    # while True:
+    #     user_message = input("Vous : ")
 
-        language = get_language(user_message)
-        language_iso = get_language_iso(language)
+    #     if user_message == "quit":
+    #         break
 
-        en_message = translate_to_english(user_message, language_iso)
+    #     language = get_language(user_message)
+    #     language_iso = get_language_iso(language)
 
-        # print(f"Texte traduit en anglais : {en_message}")
+    #     en_message = translate_to_english(user_message, language_iso)
 
-        get_emotions(en_message)
-        print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+    #     # print(f"Texte traduit en anglais : {en_message}")
 
-        Personality_Detection_from_reviews_submitted(en_message)
-        print(f"Personnalité : {user_personality}")
+    #     get_emotions(en_message)
+    #     print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
-        ai_response = get_response(en_message, language_iso, step)
-        print(f"AInesi : {ai_response}")
+    #     Personality_Detection_from_reviews_submitted(en_message)
+    #     print(f"Personnalité : {user_personality}")
 
-        step += 1
+    #     ai_response = get_response(en_message, language_iso, step)
+    #     print(f"AInesi : {ai_response}")
+
+    #     step += 1

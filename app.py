@@ -69,16 +69,16 @@ examples = [
     ("J'ai mal au coeur")
 ]
 
-title = "<center><a href=\"https://thoucentric.com/\"><img src='https://thoucentric.com/wp-content/themes/cevian-child/assets/img/Thoucentric-Logo.png' alt='Thoucentric-Logo'></a></center><br>AInesi"
+title = "<center><h1>AInesi</h1></center>"
 description = (
     "<br><br>AInesi est une Intelligence Artificielle de soutien émotionnelle et psychologique")
 
 Fotter = (
 
-    "<center>Copyright &copy; 2023 <a href=\"https://thoucentric.com/\">Thoucentric</a>. All Rights Reserved</center>"
+    "<center>Copyright &copy; 2023 - All Rights Reserved</center>"
 )
 
-css_code = 'body{background-image:url("https://picsum.photos/seed/picsum/200/300");}'
+css_path = "./style.css"
 
 app = gr.Interface(
     Personality_Detection_from_reviews_submitted,
@@ -87,10 +87,7 @@ app = gr.Interface(
     examples=examples,
     title=title,
     description=description,
-    article=Fotter,
-    allow_flagging='never',
-    analytics_enabled=False,
-    css=css_code
+    css=css_path
 )
 
 app.launch(debug=True, show_error=False)
