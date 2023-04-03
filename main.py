@@ -117,7 +117,7 @@ def get_emotions(text):
     set_user_happiness(good_score, bad_score)
 
 
-def set_user_happiness(good_score, bad_score, alpha=0.2):
+def set_user_happiness(good_score, bad_score, alpha=0.7):
     global user_happiness
 
     # Calcul du niveau d'humeur en fonction du score de bonne humeur et du score de mauvaise humeur et du niveau d'humeur précédent
@@ -214,10 +214,10 @@ def send_message(user_message):
     # print(f"Texte traduit en anglais : {en_message}")
 
     get_emotions(en_message)
-    # print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+    print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
     Personality_Detection_from_reviews_submitted(en_message)
-    # print(f"Personnalité : {user_personality}")
+    print(f"Personnalité : {user_personality}")
 
     return get_response(en_message, language_iso, step)
     # print(f"AInesi : {ai_response}")
