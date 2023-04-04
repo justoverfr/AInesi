@@ -260,7 +260,7 @@ app = gr.Interface(
 if __name__ == '__main__':
 
     step = 0
-    app.launch(debug=True, show_error=False)
+    app.launch(debug=True, show_error=False, share=True)
 
     # print("===== AInesi =====")
     # while True:
