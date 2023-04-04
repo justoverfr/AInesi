@@ -74,23 +74,6 @@ def get_language_iso(language_name):
     return language_code
 
 
-def translate_to_english(text, language_iso):
-    if language_iso == "en":
-        return text
-    else:
-        translator = pipeline(
-            "translation", model=f"Helsinki-NLP/opus-mt-{language_iso}-en")
-        return translator(text)[0]['translation_text']
-
-
-def translate_to_language(text, target_language_iso):
-    if target_language_iso != "en":
-        translator = pipeline(
-            "translation", model=f"Helsinki-NLP/opus-mt-en-{target_language_iso}")
-        return translator(text)[0]['translation_text']
-
-    else:
-        return text
 
 
 def get_emotions(text):
@@ -117,7 +100,7 @@ def get_emotions(text):
     set_user_happiness(good_score, bad_score)
 
 
-def set_user_happiness(good_score, bad_score, alpha=0.2):
+def set_user_happiness(good_score, bad_score, alpha=0.7):
     global user_happiness
 
     # Calcul du niveau d'humeur en fonction du score de bonne humeur et du score de mauvaise humeur et du niveau d'humeur précédent
@@ -200,7 +183,7 @@ def get_response(text, ai_language, step):
     ai_message = tokenizer.decode(
         chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
 
-    return translate_to_language(ai_message, ai_language)
+    return ai_message
 
 
 def send_message(user_message):
@@ -214,10 +197,10 @@ def send_message(user_message):
     # print(f"Texte traduit en anglais : {en_message}")
 
     get_emotions(en_message)
-    # print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+    print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
     Personality_Detection_from_reviews_submitted(en_message)
-    # print(f"Personnalité : {user_personality}")
+    print(f"Personnalité : {user_personality}")
 
     return get_response(en_message, language_iso, step)
     # print(f"AInesi : {ai_response}")
