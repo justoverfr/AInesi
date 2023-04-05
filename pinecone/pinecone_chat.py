@@ -9,8 +9,6 @@ from uuid import uuid4
 import datetime
 import pinecone
 
-
-
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as infile:
         return infile.read()
@@ -87,7 +85,7 @@ def load_conversation(results):
 
 if __name__ == '__main__':
     convo_lenght = 30
-    openai.api_key = open_file('openai_key.txt')
+    openai.api_key = open_file('openai_keys.txt')
     pinecone.init(api_key=open_file('keys_pinecone.txt'),
                   environment="us-east4-gcp")
     Ia = pinecone.Index("alnesi")
@@ -107,7 +105,7 @@ if __name__ == '__main__':
         save_json('nexus/%s.json' % unique_id, metadata)
         playload.append((unique_id, vector))
         # search for relevant messages, and generate a response
-        resultat = Ia.query(vector=vector, top_k=convo_lenght)
+        results = Ia.query(vector=vector, top_k=convo_lenght)
         conversation = load_conversation(results)
         prompt = open_file('prompt_response.txt').replace('<<CONVERSATION>>', conversation).replace('<<MESSAGE>>', a)
         
