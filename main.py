@@ -1,43 +1,36 @@
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM, BertForSequenceClassification, BertTokenizer
 from typing import Dict
-import langcodes
 import gradio as gr
 
 import torch
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import openai
 
 # ---------------------------------------------------------------------------- #
 #                              Hugging Face models                             #
 # ---------------------------------------------------------------------------- #
 
-# Détection de la langue
-language_detection_model = "ivanlau/language-detection-fine-tuned-on-xlm-roberta-base"
-
-tokenizer3 = AutoTokenizer.from_pretrained(language_detection_model)
-model3 = AutoModelForSequenceClassification.from_pretrained(
-    language_detection_model)
-
 # Conversation
-conversation_model = "microsoft/DialoGPT-medium"
-tokenizer = AutoTokenizer.from_pretrained(conversation_model)
-model = AutoModelForCausalLM.from_pretrained(conversation_model)
+openai_model = "davinci"
+openai_api_key = "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"
+
+openai.api_key = openai_api_key
 
 # Emotions
-emotions_model = "j-hartmann/emotion-english-distilroberta-base"
+emotions_model_name = "j-hartmann/emotion-english-distilroberta-base"
 
 emotions_analysis = pipeline(
-    "text-classification", model=emotions_model, return_all_scores=True)
+    "text-classification", model=emotions_model_name, return_all_scores=True)
 
 # Personnalité
-personality_model = "./Personality_detection_Classification_Save/"
-model2 = BertForSequenceClassification.from_pretrained(
-    personality_model, num_labels=5)  # =num_labels)
-tokenizer2 = BertTokenizer.from_pretrained(
-    personality_model, do_lower_case=True)
-model2.config.label2id = {
+personality_model_name = "./Personality_detection_Classification_Save/"
+
+personality_model = BertForSequenceClassification.from_pretrained(
+    personality_model_name, num_labels=5)  # =num_labels)
+personality_tokenizer = BertTokenizer.from_pretrained(
+    personality_model_name, do_lower_case=True)
+
+personality_model.config.label2id = {
     "Extroversion": 0,
     "Neuroticism": 1,
     "Agreeableness": 2,
@@ -45,7 +38,7 @@ model2.config.label2id = {
     "Openness": 4,
 }
 
-model2.config.id2label = {
+personality_model.config.id2label = {
     "0": "Extroversion",
     "1": "Neuroticism",
     "2": "Agreeableness",
@@ -55,42 +48,6 @@ model2.config.id2label = {
 # ---------------------------------------------------------------------------- #
 #                                   Fonctions                                  #
 # ---------------------------------------------------------------------------- #
-
-
-def get_language(text):
-    inputs = tokenizer3(text, return_tensors="pt")
-    outputs = model3(**inputs)
-
-    label_id = torch.argmax(outputs.logits, axis=1).item()
-    labels = model3.config.id2label
-    language_code = labels[label_id]
-    return language_code
-
-
-def get_language_iso(language_name):
-    language_code = langcodes.find(language_name).language
-    if language_code == "br" or language_code == "ia":
-        language_code = "fr"
-    return language_code
-
-
-def translate_to_english(text, language_iso):
-    if language_iso == "en":
-        return text
-    else:
-        translator = pipeline(
-            "translation", model=f"Helsinki-NLP/opus-mt-{language_iso}-en")
-        return translator(text)[0]['translation_text']
-
-
-def translate_to_language(text, target_language_iso):
-    if target_language_iso != "en":
-        translator = pipeline(
-            "translation", model=f"Helsinki-NLP/opus-mt-en-{target_language_iso}")
-        return translator(text)[0]['translation_text']
-
-    else:
-        return text
 
 
 def get_emotions(text):
@@ -146,16 +103,16 @@ def Personality_Detection_from_reviews_submitted(model_input: str) -> Dict[str, 
         dict_custom = {}
         Preprocess_part1 = model_input[:len(model_input)]
         Preprocess_part2 = model_input[len(model_input):]
-        dict1 = tokenizer2.encode_plus(
+        dict1 = personality_tokenizer.encode_plus(
             Preprocess_part1, max_length=1024, padding=True, truncation=True)
-        dict2 = tokenizer2.encode_plus(
+        dict2 = personality_tokenizer.encode_plus(
             Preprocess_part2, max_length=1024, padding=True, truncation=True)
         dict_custom['input_ids'] = [dict1['input_ids'], dict1['input_ids']]
         dict_custom['token_type_ids'] = [
             dict1['token_type_ids'], dict1['token_type_ids']]
         dict_custom['attention_mask'] = [
             dict1['attention_mask'], dict1['attention_mask']]
-        outs = model2(torch.tensor(dict_custom['input_ids']), token_type_ids=None, attention_mask=torch.tensor(
+        outs = personality_model(torch.tensor(dict_custom['input_ids']), token_type_ids=None, attention_mask=torch.tensor(
             dict_custom['attention_mask']))
         b_logit_pred = outs[0]
         pred_label = torch.sigmoid(b_logit_pred)
@@ -182,47 +139,40 @@ def set_user_personality(personality_scores):
     user_personality = result
 
 
-def get_response(text, ai_language, step):
-    global new_user_input_ids, bot_input_ids, chat_history_ids
-    # encode the new user input, add the eos_token and return a tensor in Pytorch
-    new_user_input_ids = tokenizer.encode(
-        text + tokenizer.eos_token, return_tensors='pt')
+def get_response(message):
+    conversation_history = f"User: {message}\nIA:"
+    response_generation = openai.Completion.create(
+        engine="davinci",
+        prompt=conversation_history,
+        # Ajustez la température pour contrôler la créativité des réponses (0.7 est une valeur recommandée)
+        temperature=0.7,
+        max_tokens=150,         # Limitez le nombre de tokens dans la réponse générée
+        # Utilisez la méthode "nucleus sampling" pour sélectionner les réponses (1 signifie que toutes les réponses possibles seront prises en compte)
+        top_p=1,
+        # Ajustez la pénalité de fréquence pour éviter des réponses trop fréquentes ou trop rares
+        frequency_penalty=0,
+        # Ajustez la pénalité de présence pour éviter la répétition des tokens dans la réponse
+        presence_penalty=0,
+        # Indiquez les caractères de fin pour arrêter la génération de texte (ici, on arrête après un saut de ligne)
+        stop=["\n"],
+    )
 
-    # append the new user input tokens to the chat history
-    bot_input_ids = torch.cat(
-        [chat_history_ids, new_user_input_ids], dim=-1) if step > 0 else new_user_input_ids
-
-    # generated a response while limiting the total chat history to 1000 tokens,
-    chat_history_ids = model.generate(
-        bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
-
-    # pretty print last ouput tokens from bot
-    ai_message = tokenizer.decode(
-        chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
-
-    return translate_to_language(ai_message, ai_language)
+    reponse = response_generation.choices[0].text.strip()
+    return reponse
 
 
 def send_message(user_message):
     global step
 
-    language = get_language(user_message)
-    language_iso = get_language_iso(language)
-
-    en_message = translate_to_english(user_message, language_iso)
-
-    # print(f"Texte traduit en anglais : {en_message}")
-
-    get_emotions(en_message)
+    get_emotions(user_message)
     # print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
-    Personality_Detection_from_reviews_submitted(en_message)
+    Personality_Detection_from_reviews_submitted(user_message)
     # print(f"Personnalité : {user_personality}")
 
-    return get_response(en_message, language_iso, step)
+    response = get_response(user_message)
+    return response
     # print(f"AInesi : {ai_response}")
-
-    step += 1
 
 
 user_happiness = 1
@@ -259,8 +209,8 @@ app = gr.Interface(
 
 if __name__ == '__main__':
 
-    step = 0
-    app.launch(debug=True, show_error=False)
+    # app.launch(debug=True, show_error=False, share=True)
+    sauce = send_message("Tu veux devenir mon ami ?")
 
     # print("===== AInesi =====")
     # while True:
