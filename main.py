@@ -12,7 +12,7 @@ import openai
 
 # Conversation
 openai_model = "davinci"
-openai_api_key = "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"
+openai_api_key = "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"
 
 openai.api_key = openai_api_key
 
@@ -144,15 +144,15 @@ def get_response(message):
     response_generation = openai.Completion.create(
         engine="davinci",
         prompt=conversation_history,
-        # Ajustez la température pour contrôler la créativité des réponses (0.7 est une valeur recommandée)
-        temperature=0.7,
-        max_tokens=150,         # Limitez le nombre de tokens dans la réponse générée
-        # Utilisez la méthode "nucleus sampling" pour sélectionner les réponses (1 signifie que toutes les réponses possibles seront prises en compte)
-        top_p=1,
-        # Ajustez la pénalité de fréquence pour éviter des réponses trop fréquentes ou trop rares
-        frequency_penalty=0,
-        # Ajustez la pénalité de présence pour éviter la répétition des tokens dans la réponse
-        presence_penalty=0,
+        # # Ajustez la température pour contrôler la créativité des réponses (0.7 est une valeur recommandée)
+        # temperature=0.7,
+        # max_tokens=150,         # Limitez le nombre de tokens dans la réponse générée
+        # # Utilisez la méthode "nucleus sampling" pour sélectionner les réponses (1 signifie que toutes les réponses possibles seront prises en compte)
+        # top_p=1,
+        # # Ajustez la pénalité de fréquence pour éviter des réponses trop fréquentes ou trop rares
+        # frequency_penalty=0,
+        # # Ajustez la pénalité de présence pour éviter la répétition des tokens dans la réponse
+        # presence_penalty=0,
         # Indiquez les caractères de fin pour arrêter la génération de texte (ici, on arrête après un saut de ligne)
         stop=["\n"],
     )
@@ -163,8 +163,6 @@ def get_response(message):
 
 
 def send_message(user_message):
-    global step
-
     get_emotions(user_message)
     print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
@@ -172,6 +170,7 @@ def send_message(user_message):
     print(f"Personnalité : {user_personality}")
 
     response = get_response(user_message)
+    print(f"Réponse : {response}")
     return response
 
 
@@ -210,7 +209,8 @@ app = gr.Interface(
 if __name__ == '__main__':
 
     # app.launch(debug=True, show_error=False, share=True)
-    sauce = send_message("Tu veux devenir mon ami ?")
+    message = input("Message : ")
+    sauce = send_message(message)
 
     # print("===== AInesi =====")
     # while True:
