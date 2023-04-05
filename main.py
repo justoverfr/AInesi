@@ -50,23 +50,6 @@ personality_model.config.id2label = {
 # ---------------------------------------------------------------------------- #
 
 
-def get_language(text):
-    inputs = tokenizer3(text, return_tensors="pt")
-    outputs = model3(**inputs)
-
-    label_id = torch.argmax(outputs.logits, axis=1).item()
-    labels = model3.config.id2label
-    language_code = labels[label_id]
-    return language_code
-
-
-def get_language_iso(language_name):
-    language_code = langcodes.find(language_name).language
-    if language_code == "br" or language_code == "ia":
-        language_code = "fr"
-    return language_code
-
-
 def get_emotions(text):
     emotions_array = emotions_analysis(text)[0]
 
@@ -174,17 +157,7 @@ def get_response(message):
         stop=["\n"],
     )
 
-    # append the new user input tokens to the chat history
-    bot_input_ids = torch.cat(
-        [chat_history_ids, new_user_input_ids], dim=-1) if step > 0 else new_user_input_ids
-
-    # generated a response while limiting the total chat history to 1000 tokens,
-    chat_history_ids = model.generate(
-        bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
-
-    # pretty print last ouput tokens from bot
-    ai_message = tokenizer.decode(
-        chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
+    ai_message = response_generation.choices[0].text.strip()
 
     return ai_message
 
@@ -192,22 +165,14 @@ def get_response(message):
 def send_message(user_message):
     global step
 
-    language = get_language(user_message)
-    language_iso = get_language_iso(language)
-
-    en_message = translate_to_english(user_message, language_iso)
-
-    # print(f"Texte traduit en anglais : {en_message}")
-
-    get_emotions(en_message)
+    get_emotions(user_message)
     print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
 
-    Personality_Detection_from_reviews_submitted(en_message)
+    Personality_Detection_from_reviews_submitted(user_message)
     print(f"Personnalité : {user_personality}")
 
     response = get_response(user_message)
     return response
-    # print(f"AInesi : {ai_response}")
 
 
 user_happiness = 1
