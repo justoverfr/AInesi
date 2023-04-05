@@ -50,6 +50,23 @@ personality_model.config.id2label = {
 # ---------------------------------------------------------------------------- #
 
 
+def get_language(text):
+    inputs = tokenizer3(text, return_tensors="pt")
+    outputs = model3(**inputs)
+
+    label_id = torch.argmax(outputs.logits, axis=1).item()
+    labels = model3.config.id2label
+    language_code = labels[label_id]
+    return language_code
+
+
+def get_language_iso(language_name):
+    language_code = langcodes.find(language_name).language
+    if language_code == "br" or language_code == "ia":
+        language_code = "fr"
+    return language_code
+
+
 def get_emotions(text):
     emotions_array = emotions_analysis(text)[0]
 
@@ -74,7 +91,7 @@ def get_emotions(text):
     set_user_happiness(good_score, bad_score)
 
 
-def set_user_happiness(good_score, bad_score, alpha=0.2):
+def set_user_happiness(good_score, bad_score, alpha=0.7):
     global user_happiness
 
     # Calcul du niveau d'humeur en fonction du score de bonne humeur et du score de mauvaise humeur et du niveau d'humeur précédent
@@ -157,18 +174,36 @@ def get_response(message):
         stop=["\n"],
     )
 
-    reponse = response_generation.choices[0].text.strip()
-    return reponse
+    # append the new user input tokens to the chat history
+    bot_input_ids = torch.cat(
+        [chat_history_ids, new_user_input_ids], dim=-1) if step > 0 else new_user_input_ids
+
+    # generated a response while limiting the total chat history to 1000 tokens,
+    chat_history_ids = model.generate(
+        bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
+
+    # pretty print last ouput tokens from bot
+    ai_message = tokenizer.decode(
+        chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
+
+    return ai_message
 
 
 def send_message(user_message):
     global step
 
-    get_emotions(user_message)
-    # print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+    language = get_language(user_message)
+    language_iso = get_language_iso(language)
 
-    Personality_Detection_from_reviews_submitted(user_message)
-    # print(f"Personnalité : {user_personality}")
+    en_message = translate_to_english(user_message, language_iso)
+
+    # print(f"Texte traduit en anglais : {en_message}")
+
+    get_emotions(en_message)
+    print(f"Score de bonne humeur : {user_happiness * 100 :.2f}%")
+
+    Personality_Detection_from_reviews_submitted(en_message)
+    print(f"Personnalité : {user_personality}")
 
     response = get_response(user_message)
     return response
