@@ -96,7 +96,6 @@ if __name__ == '__main__':
         playload = list()
         a = input('\n\nUSER: ')
         timestamp = time()
-        vector = gpt3_embedding(a)
         timestring = timestamp_to_datetime(timestamp)
         message = '%s: %s - %s' % ('USER', timestring, a)
         vector = gpt3_embedding(message)
